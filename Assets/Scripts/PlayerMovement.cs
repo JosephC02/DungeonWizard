@@ -14,7 +14,7 @@ public class PlayerMovement : MonoBehaviour
 
     [Header("Jumping")]
     public float jumpForce;
-    public float airMultiplier; 
+    public float airMultiplier;
 
     [Header("Crouching")]
     public float crouchSpeed;
@@ -31,6 +31,7 @@ public class PlayerMovement : MonoBehaviour
     bool CASTING;
     bool GROUNDED;
     bool CANJUMP;
+    bool AIRJUMP;
 
     [Header("Keybinds")]
     public KeyCode jumpKey = KeyCode.Space;
@@ -81,6 +82,7 @@ public class PlayerMovement : MonoBehaviour
         playerRB = GetComponent<Rigidbody>();
         playerRB.freezeRotation = true;
         CANJUMP = true;
+        AIRJUMP = true;
 
         selectedSlot = 1;
         castMode = false;
@@ -91,7 +93,7 @@ public class PlayerMovement : MonoBehaviour
     private  void Update()
     {
         GROUNDED = Physics.Raycast(transform.position, Vector3.down, playerHeight * 0.5f + 0.2f, whatIsGround);
-        CANJUMP = !CASTING && !BLOCKING;
+        
         
         MyInput();
         SpeedControl();
@@ -101,11 +103,16 @@ public class PlayerMovement : MonoBehaviour
             playerRB.linearDamping = groundDrag;
         else 
             playerRB.linearDamping = 0;
+
     }
 
     private void FixedUpdate()
     {
         MovePlayer();
+        CANJUMP = !CASTING && !BLOCKING;
+        if (GROUNDED) {
+            AIRJUMP = true;
+        }
     }
 
     private void MyInput()
@@ -113,9 +120,12 @@ public class PlayerMovement : MonoBehaviour
         horizontalInput = Input.GetAxisRaw("Horizontal");
         verticalInput = Input.GetAxisRaw("Vertical"); 
 
-        if(Input.GetKey(jumpKey) && CANJUMP && GROUNDED)
+        if(Input.GetKeyDown(jumpKey) && CANJUMP && (GROUNDED || AIRJUMP == true))
         {   
             Jump();
+            if (!GROUNDED) {
+                AIRJUMP = false;
+            }
         }
 
         if (Input.GetKeyDown(crouchKey))
