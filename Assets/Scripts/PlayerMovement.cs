@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Net.NetworkInformation;
 using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
@@ -9,8 +10,9 @@ public class PlayerMovement : MonoBehaviour
     public float moveSpeed;
     public float walkSpeed;
     public float sprintSpeed;
-
     public float groundDrag;
+
+    public Transform orientaion;
 
     [Header("Jumping")]
     public float jumpForce;
@@ -56,7 +58,8 @@ public class PlayerMovement : MonoBehaviour
     private int selectedSlot;
     private bool castMode;
 
-    public Transform orientaion; 
+    [Header("Projectiles")]
+    public Rigidbody playerProjectile;
 
     float horizontalInput;
     float verticalInput; 
@@ -67,8 +70,7 @@ public class PlayerMovement : MonoBehaviour
 
     Rigidbody playerRB;
 
-    public MovementState state;
-
+    private MovementState state;
     public enum MovementState
     {
         walking,
@@ -93,9 +95,9 @@ public class PlayerMovement : MonoBehaviour
     private  void Update()
     {
         GROUNDED = Physics.Raycast(transform.position, Vector3.down, playerHeight * 0.5f + 0.2f, whatIsGround);
-        
-        
-        MyInput();
+
+
+        ResolveInputs();
         SpeedControl();
         StateHandler();
 
@@ -110,12 +112,13 @@ public class PlayerMovement : MonoBehaviour
     {
         MovePlayer();
         CANJUMP = !CASTING && !BLOCKING;
-        if (GROUNDED) {
+        if (GROUNDED)
+        {
             AIRJUMP = true;
         }
     }
 
-    private void MyInput()
+    private void ResolveInputs()
     {
         horizontalInput = Input.GetAxisRaw("Horizontal");
         verticalInput = Input.GetAxisRaw("Vertical"); 
@@ -123,7 +126,8 @@ public class PlayerMovement : MonoBehaviour
         if(Input.GetKeyDown(jumpKey) && CANJUMP && (GROUNDED || AIRJUMP == true))
         {   
             Jump();
-            if (!GROUNDED) {
+            if (!GROUNDED) 
+            {
                 AIRJUMP = false;
             }
         }
@@ -141,8 +145,14 @@ public class PlayerMovement : MonoBehaviour
         if(Input.GetKeyDown(primaryFire))
         {
             if (castMode) { Debug.Log("Cast mode lmb"); }
-            else {  }
+            else 
+            {
+                var projectile = Instantiate(playerProjectile, orientaion.position, orientaion.rotation);
+                projectile.linearVelocity = orientaion.transform.TransformDirection(new Vector3(0,0,10));
+                Physics.IgnoreCollision(projectile.GetComponent<Collider>(),GetComponent<Collider>());
+            }
         }
+
         if (Input.GetKeyDown(secondaryFire))
         {
             if (castMode) { Debug.Log("Cast mode rmb"); }
@@ -207,7 +217,6 @@ public class PlayerMovement : MonoBehaviour
                 playerRB.AddForce(Vector3.down * 110f, ForceMode.Force);
         }
         
-
         if (GROUNDED)
         {
             playerRB.AddForce(moveDirection.normalized * moveSpeed * 10f, ForceMode.Force);
