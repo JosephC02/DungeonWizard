@@ -29,8 +29,6 @@ public class PlayerMovement : MonoBehaviour
     private bool exitSlope;
 
     [Header("Rules")]
-    bool BLOCKING;
-    bool CASTING;
     bool GROUNDED;
     bool CANJUMP;
     bool AIRJUMP;
@@ -39,27 +37,10 @@ public class PlayerMovement : MonoBehaviour
     public KeyCode jumpKey = KeyCode.Space;
     public KeyCode sprintKey = KeyCode.LeftShift;
     public KeyCode crouchKey = KeyCode.LeftControl;
-    public KeyCode primaryFire = KeyCode.Mouse0;
-    public KeyCode secondaryFire = KeyCode.Mouse1;
-    public KeyCode slot1 = KeyCode.Alpha1;
-    public KeyCode slot2 = KeyCode.Alpha2;
-    public KeyCode slot3 = KeyCode.Alpha3;
-    public KeyCode slot4 = KeyCode.Alpha4;
-    public KeyCode slot5 = KeyCode.Alpha5;
-    public KeyCode slot6 = KeyCode.Alpha6;
-    public KeyCode toggleCastMode = KeyCode.Q;
 
     [Header("Ground Check")]
     public float playerHeight;
     public LayerMask whatIsGround;
-
-    [Header("Spellcasting")]
-    private Array equippedComponents;
-    private int selectedSlot;
-    private bool castMode;
-
-    [Header("Projectiles")]
-    public Rigidbody playerProjectile;
 
     float horizontalInput;
     float verticalInput; 
@@ -86,16 +67,12 @@ public class PlayerMovement : MonoBehaviour
         CANJUMP = true;
         AIRJUMP = true;
 
-        selectedSlot = 1;
-        castMode = false;
-
         startYScale = transform.localScale.y;
     }
 
     private  void Update()
     {
         GROUNDED = Physics.Raycast(transform.position, Vector3.down, playerHeight * 0.5f + 0.2f, whatIsGround);
-
 
         ResolveInputs();
         SpeedControl();
@@ -111,7 +88,6 @@ public class PlayerMovement : MonoBehaviour
     private void FixedUpdate()
     {
         MovePlayer();
-        CANJUMP = !CASTING && !BLOCKING;
         if (GROUNDED)
         {
             AIRJUMP = true;
@@ -141,40 +117,6 @@ public class PlayerMovement : MonoBehaviour
         {
             transform.localScale = new Vector3(transform.localScale.x, startYScale, transform.localScale.z);
         }
-
-        if(Input.GetKeyDown(primaryFire))
-        {
-            if (castMode) { Debug.Log("Cast mode lmb"); }
-            else 
-            {
-                var projectile = Instantiate(playerProjectile, orientaion.position, orientaion.rotation);
-                projectile.linearVelocity = orientaion.transform.TransformDirection(new Vector3(0,0,10));
-                Physics.IgnoreCollision(projectile.GetComponent<Collider>(),GetComponent<Collider>());
-            }
-        }
-
-        if (Input.GetKeyDown(secondaryFire))
-        {
-            if (castMode) { Debug.Log("Cast mode rmb"); }
-            else{ BLOCKING = true; }
-        }
-        if (Input.GetKeyUp(secondaryFire))
-        {
-            if (castMode) { Debug.Log("Cast mode release rmb"); }
-            else { BLOCKING = false; }
-        }
-
-        if (Input.GetKeyDown(slot1)){ selectedSlot = 1; }
-        else if (Input.GetKeyDown(slot2)){ selectedSlot = 2; }
-        else if (Input.GetKeyDown(slot3)){ selectedSlot = 3; }
-        else if (Input.GetKeyDown(slot4)){ selectedSlot = 4; }
-        else if (Input.GetKeyDown(slot5)){ selectedSlot = 5; }
-        else if (Input.GetKeyDown(slot6)){ selectedSlot = 6; }
-
-        if (Input.GetKeyDown(toggleCastMode))
-        {
-            castMode = !castMode;
-        }
     }
 
     private void StateHandler()
@@ -182,7 +124,7 @@ public class PlayerMovement : MonoBehaviour
         
         if (GROUNDED)
         {
-            if (Input.GetKey(crouchKey) || BLOCKING)
+            if (Input.GetKey(crouchKey))
             {
                 state = MovementState.crouching;
                 moveSpeed = crouchSpeed;

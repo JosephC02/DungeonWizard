@@ -16,7 +16,7 @@ GameObject:
   - component: {fileID: 9109205258847400297}
   m_Layer: 0
   m_Name: playerProjectile 1
-  m_TagString: Untagged
+  m_TagString: damagingProjectile
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -153,4 +153,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0e7c214e3de0874dac80ed7746bcfcf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectileScript
-  flightTime: 10
+  flightTime: 5
+  damage: 2

@@ -5,6 +5,8 @@ public class ProjectileScript : MonoBehaviour
     public float flightTime;
 
     private float flightTimer;
+
+    public float damage;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
