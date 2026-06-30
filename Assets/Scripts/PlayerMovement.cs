@@ -182,21 +182,19 @@ public class PlayerMovement : MonoBehaviour
         
         if (GROUNDED)
         {
-            if (Input.GetKey(crouchKey))
+            if (Input.GetKey(crouchKey) || BLOCKING)
             {
                 state = MovementState.crouching;
                 moveSpeed = crouchSpeed;
             }
-            else if (Input.GetKey(sprintKey) && !BLOCKING) 
+            else if (Input.GetKey(sprintKey)) 
             {
                 state = MovementState.sprinting;
                 moveSpeed = sprintSpeed;
             }
             else
             {
-                state = MovementState.walking;
-                if (BLOCKING) { moveSpeed = crouchSpeed; }
-                else { moveSpeed = walkSpeed; }
+                moveSpeed = walkSpeed; 
             }
         }
         else 

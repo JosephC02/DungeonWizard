@@ -16,8 +16,6 @@ public class ProjectileScript : MonoBehaviour
     {
         flightTimer -= Time.deltaTime;
 
-        Debug.Log(flightTimer);
-
         if ( flightTimer < 0) 
         {
             Destroy(gameObject);
