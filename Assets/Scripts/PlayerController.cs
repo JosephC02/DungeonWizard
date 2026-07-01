@@ -1,5 +1,7 @@
 using System;
+using System.Data;
 using Unity.Mathematics;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -30,7 +32,6 @@ public class PlayerController : MonoBehaviour
     [Header("Spellcasting")]
     private Array equippedComponents;
     private int selectedSlot;
-    private bool castMode;
     public float shieldCost;
     public float manaRegen;
 
@@ -39,14 +40,30 @@ public class PlayerController : MonoBehaviour
 
     [Header("Rules")]
     bool BLOCKING;
-    bool PLAYERDEAD;
+    bool NO_MANA;
+    bool CAN_REGEN_MANA;
+    bool PLAYER_DEAD;
     bool CASTING;
+    bool CAST_MODE;
+    bool PRIMARY_FIRE;
+    bool SECONDARY_FIRE;
+    bool TOGGLE_CAST_MODE;
+
+    private enum playerState
+    {
+        Base,
+        Blocking,
+        Casting
+    }
+
+    private playerState state;
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         selectedSlot = 1;
-        castMode = false;
-        PLAYERDEAD = false;
+        CAST_MODE = false;
+        PLAYER_DEAD = false;
         healthBar.maxValue = maxHealth;
         healthBar.value = maxHealth;
         currentHealth = maxHealth;
@@ -59,16 +76,17 @@ public class PlayerController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        ResolveInputs();
+        GetInputs();
+        StateHandler()
         UpdateRules();
         UpdateUI();
     }
 
-    private void ResolveInputs()
+    private void GetInputs()
     {
         if (Input.GetKeyDown(primaryFire))
         {
-            if (castMode) { Debug.Log("Cast mode lmb"); }
+            if (CAST_MODE) { Debug.Log("Cast mode lmb"); }
             else
             {
                 var projectile = Instantiate(playerProjectile, orientaion.position, orientaion.rotation);
@@ -79,12 +97,12 @@ public class PlayerController : MonoBehaviour
 
         if (Input.GetKeyDown(secondaryFire))
         {
-            if (castMode) { Debug.Log("Cast mode rmb"); }
+            if (CAST_MODE) { Debug.Log("Cast mode rmb"); }
             else if((currentMana > 0)) { BLOCKING = true; }
         }
         else if(Input.GetKeyUp(secondaryFire))
         {
-            if (castMode) { Debug.Log("Cast mode release rmb"); }
+            if (CAST_MODE) { Debug.Log("Cast mode release rmb"); }
             else 
             { 
                 BLOCKING = false;
@@ -108,7 +126,7 @@ public class PlayerController : MonoBehaviour
         }
 
         if (BLOCKING) { Debug.Log("BLOCKING"); }
-        if (PLAYERDEAD) { Debug.Log("PLAYERDEAD"); }
+        if (PLAYER_DEAD) { Debug.Log("PLAYERDEAD"); }
 
         if (Input.GetKeyDown(slot1)) { selectedSlot = 1; }
         else if (Input.GetKeyDown(slot2)) { selectedSlot = 2; }
@@ -119,7 +137,7 @@ public class PlayerController : MonoBehaviour
 
         if (Input.GetKeyDown(toggleCastMode))
         {
-            castMode = !castMode;
+            CAST_MODE = !CAST_MODE;
         }
     }
 
@@ -140,6 +158,11 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    private void StateHandler() 
+    {
+
+    }
+
     private void UpdateUI() 
     {
         healthBar.value = currentHealth;
@@ -148,7 +171,16 @@ public class PlayerController : MonoBehaviour
 
     private void UpdateRules() 
     {
-        if (currentHealth <= 0) { PLAYERDEAD = true; }
+        if (currentHealth <= 0) { PLAYER_DEAD = true; }
+
+        if(currentMana <= 0) 
+        { 
+            NO_MANA = true; 
+            currentMana = 0;
+        }
+        else { NO_MANA = false; }
+
+        CAN_REGEN_MANA = !BLOCKING && (currentMana < maxMana);
     }
 }
 
