@@ -1018,7 +1018,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: '::'
   orientaion: {fileID: 73459198}
   maxHealth: 10
-  maxMana: 50
+  maxMana: 100
   healthBar: {fileID: 147664242}
   manaBar: {fileID: 2006752786}
   primaryFire: 323
@@ -1031,7 +1031,10 @@ MonoBehaviour:
   slot6: 54
   toggleCastMode: 113
   shieldCost: 0.05
+  parryCost: 5
   manaRegen: 0.02
+  parryWindow: 0.4
+  blockCooldown: 0.2
   playerProjectile: {fileID: 680791957658576329, guid: e21e99d91885f66418d4e4b9c8e60980, type: 3}
 --- !u!1 &1120477355
 GameObject:
