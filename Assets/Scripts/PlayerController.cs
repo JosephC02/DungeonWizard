@@ -33,36 +33,44 @@ public class PlayerController : MonoBehaviour
     private Array equippedComponents;
     private int selectedSlot;
     public float shieldCost;
+    public float parryCost;
     public float manaRegen;
+    public float parryWindow;
+    private float parryTimer;
+    public float blockCooldown;
+    private float blockCooldownTimer;
 
     [Header("Projectiles")]
     public Rigidbody playerProjectile;
 
     [Header("Rules")]
-    bool BLOCKING;
+    bool CAN_BLOCK;
     bool NO_MANA;
-    bool CAN_REGEN_MANA;
     bool PLAYER_DEAD;
     bool CASTING;
-    bool CAST_MODE;
     bool PRIMARY_FIRE;
-    bool SECONDARY_FIRE;
+    bool SECONDARY_FIRE_PRESSED;
+    bool SECONDARY_FIRE_HELD;
     bool TOGGLE_CAST_MODE;
 
     private enum playerState
     {
         Base,
         Blocking,
-        Casting
+        Parry,
+        Casting,
+        Cast_Mode
     }
 
-    private playerState state;
+    private playerState currentState;
+    private playerState lastState;
+
+    private bool changedState = false;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         selectedSlot = 1;
-        CAST_MODE = false;
         PLAYER_DEAD = false;
         healthBar.maxValue = maxHealth;
         healthBar.value = maxHealth;
@@ -71,13 +79,19 @@ public class PlayerController : MonoBehaviour
         manaBar.maxValue = maxMana;
         manaBar.value = maxMana;
         currentMana = maxMana;
+
+        currentState = playerState.Base;
+        lastState = playerState.Base;
+
+        parryTimer = 0;
+        blockCooldownTimer = 0;
     }
 
     // Update is called once per frame
     void Update()
     {
         GetInputs();
-        StateHandler()
+        StateHandler();
         UpdateRules();
         UpdateUI();
     }
@@ -86,47 +100,17 @@ public class PlayerController : MonoBehaviour
     {
         if (Input.GetKeyDown(primaryFire))
         {
-            if (CAST_MODE) { Debug.Log("Cast mode lmb"); }
-            else
-            {
-                var projectile = Instantiate(playerProjectile, orientaion.position, orientaion.rotation);
-                projectile.linearVelocity = orientaion.transform.TransformDirection(new Vector3(0, 0, 10));
-                Physics.IgnoreCollision(projectile.GetComponent<Collider>(), GetComponent<Collider>());
-            }
+            PRIMARY_FIRE = true;
+        }
+        else
+        {
+            PRIMARY_FIRE = false;
         }
 
-        if (Input.GetKeyDown(secondaryFire))
-        {
-            if (CAST_MODE) { Debug.Log("Cast mode rmb"); }
-            else if((currentMana > 0)) { BLOCKING = true; }
-        }
-        else if(Input.GetKeyUp(secondaryFire))
-        {
-            if (CAST_MODE) { Debug.Log("Cast mode release rmb"); }
-            else 
-            { 
-                BLOCKING = false;
-            }
-        }
-
-        if (BLOCKING) 
-        { 
-            if(currentMana > 0) 
-            {
-                currentMana -= shieldCost;
-            }
-            else 
-            {
-                BLOCKING = false;
-            }
-        }
-        else 
-        {
-            if (currentMana <= maxMana) { currentMana += manaRegen; }
-        }
-
-        if (BLOCKING) { Debug.Log("BLOCKING"); }
-        if (PLAYER_DEAD) { Debug.Log("PLAYERDEAD"); }
+        if (Input.GetKeyDown(secondaryFire)) { SECONDARY_FIRE_PRESSED = true; }
+        else{ SECONDARY_FIRE_PRESSED = false; }
+        if (Input.GetKey(secondaryFire) && !SECONDARY_FIRE_PRESSED) { SECONDARY_FIRE_HELD = true; }
+        else { SECONDARY_FIRE_HELD = false; }
 
         if (Input.GetKeyDown(slot1)) { selectedSlot = 1; }
         else if (Input.GetKeyDown(slot2)) { selectedSlot = 2; }
@@ -137,36 +121,93 @@ public class PlayerController : MonoBehaviour
 
         if (Input.GetKeyDown(toggleCastMode))
         {
-            CAST_MODE = !CAST_MODE;
+            TOGGLE_CAST_MODE = true;
         }
-    }
-
-    private void OnCollisionEnter(Collision collision)
-    {
-        if (collision.gameObject.tag == "damagingProjectile")
-        {
-            if (!BLOCKING) 
-            { 
-                currentHealth -= collision.gameObject.GetComponent<ProjectileScript>().damage;
-                Debug.Log("Hit!");
-            }
-            else 
-            { 
-                currentMana -= collision.gameObject.GetComponent<ProjectileScript>().damage;
-                Debug.Log("Hit Shield");
-            }
-        }
+        else { TOGGLE_CAST_MODE = false; }
     }
 
     private void StateHandler() 
     {
+        if(currentState != lastState) {lastState = currentState; changedState = true; }
 
+        switch (currentState) 
+        {
+            case playerState.Base:
+                if (PRIMARY_FIRE) 
+                {
+                    var projectile = Instantiate(playerProjectile, orientaion.position, orientaion.rotation);
+                    projectile.linearVelocity = orientaion.transform.TransformDirection(new Vector3(0, 0, 10));
+                    Physics.IgnoreCollision(projectile.GetComponent<Collider>(), GetComponent<Collider>());
+                    break;
+                }
+                else if (SECONDARY_FIRE_PRESSED) 
+                {
+                    if (NO_MANA || !CAN_BLOCK) { break; }
+                    currentState = playerState.Parry;
+                    parryTimer = parryWindow;
+                    break;
+                }
+                else if (TOGGLE_CAST_MODE)
+                {
+                    currentState = playerState.Cast_Mode;
+                    TOGGLE_CAST_MODE = false;
+                    break;
+                }
+                else 
+                {
+                    if(currentMana <= maxMana) { currentMana += manaRegen; }
+                    else { currentMana = maxMana; }
+                    break;
+                } 
+
+            case playerState.Parry:
+                if (changedState) { currentMana -= parryCost; }
+                if (parryTimer <= 0)
+                {
+                    if (SECONDARY_FIRE_HELD) 
+                    { 
+                        currentState = playerState.Blocking; 
+                        break; 
+                    }
+                    currentState = playerState.Base;
+                    blockCooldownTimer = blockCooldown;
+                    break;
+                }
+                parryTimer -= Time.deltaTime;
+                break;
+
+            case playerState.Blocking:
+                if (NO_MANA || !SECONDARY_FIRE_HELD) 
+                { 
+                    currentState = playerState.Base;
+                    blockCooldownTimer = blockCooldown;
+                    break; 
+                }
+                currentMana -= shieldCost;
+                break;
+
+            case playerState.Cast_Mode:
+                if (TOGGLE_CAST_MODE) { currentState = playerState.Base; }
+                break;
+        }
+        if (changedState) { changedState = false; }
     }
 
-    private void UpdateUI() 
+    private void OnCollisionEnter(Collision collision)
     {
-        healthBar.value = currentHealth;
-        manaBar.value = currentMana;
+        if (collision.gameObject.tag == "damagingProjectile" && currentState != playerState.Parry)
+        {
+            if (currentState != playerState.Blocking)
+            {
+                currentHealth -= collision.gameObject.GetComponent<ProjectileScript>().damage;
+                //Debug.Log("Hit!");
+            }
+            else
+            {
+                currentMana -= collision.gameObject.GetComponent<ProjectileScript>().damage;
+                //Debug.Log("Hit Shield");
+            }
+        }
     }
 
     private void UpdateRules() 
@@ -180,7 +221,18 @@ public class PlayerController : MonoBehaviour
         }
         else { NO_MANA = false; }
 
-        CAN_REGEN_MANA = !BLOCKING && (currentMana < maxMana);
+        if(blockCooldownTimer > 0) 
+        {
+            blockCooldownTimer -= Time.deltaTime;
+            CAN_BLOCK = false;
+        }
+        else { CAN_BLOCK = true; }
+    }
+
+    private void UpdateUI()
+    {
+        healthBar.value = currentHealth;
+        manaBar.value = currentMana;
     }
 }
 
