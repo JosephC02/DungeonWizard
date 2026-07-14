@@ -11,6 +11,7 @@ public class PlayerMovement : MonoBehaviour
     public float walkSpeed;
     public float sprintSpeed;
     public float groundDrag;
+    public float wallRunSpeed;
 
     public Transform orientaion;
 
@@ -32,6 +33,7 @@ public class PlayerMovement : MonoBehaviour
     bool GROUNDED;
     bool CANJUMP;
     bool AIRJUMP;
+    public bool WALLRUNNING;
 
     [Header("Keybinds")]
     public KeyCode jumpKey = KeyCode.Space;
@@ -57,6 +59,7 @@ public class PlayerMovement : MonoBehaviour
         walking,
         sprinting,
         air,
+        wallRunning,
         crouching,
     }
 
@@ -122,8 +125,17 @@ public class PlayerMovement : MonoBehaviour
     private void StateHandler()
     {
         
+        if (WALLRUNNING) 
+            {
+                state = MovementState.wallRunning;
+                moveSpeed = wallRunSpeed;
+                Debug.Log("WALLRUNNINGGGGG");
+            }
+
+
         if (GROUNDED)
         {
+
             if (Input.GetKey(crouchKey))
             {
                 state = MovementState.crouching;
