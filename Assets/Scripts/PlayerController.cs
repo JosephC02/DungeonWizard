@@ -188,6 +188,32 @@ public class PlayerController : MonoBehaviour
 
             case playerState.Cast_Mode:
                 if (TOGGLE_CAST_MODE) { currentState = playerState.Base; }
+                if (PRIMARY_FIRE) 
+                {
+                    //DEBUG//
+                    SpellComponent component1 = new SpellComponent();
+                    SpellComponent component2 = new SpellComponent(); ;
+                    SpellComponent component3 = new SpellComponent(); ;
+
+                    component1.spellType = spellType.Ball;
+                    component2.spellType = spellType.Vortex; 
+                    component3.spellType = spellType.None;
+
+                    component1.damageType = damageType.None;
+                    component2.damageType = damageType.Fire;
+                    component3.damageType = damageType.Lightning;
+
+                    component1.damage = 5;
+                    component2.damage = 10;
+                    component3.damage = 0;
+
+                    SpellComponent[] components = new SpellComponent[] { component1, component2, component3 };
+
+                    Spell spell = CreateSpell(components);
+                    spell.CastSpell();
+
+                    break;
+                }
                 break;
         }
         if (changedState) { changedState = false; }
@@ -233,6 +259,50 @@ public class PlayerController : MonoBehaviour
     {
         healthBar.value = currentHealth;
         manaBar.value = currentMana;
+    }
+
+    private Spell CreateSpell(SpellComponent[] Components) 
+    {
+        spellType primaryType = spellType.None;
+        spellType secondaryType = spellType.None;
+        damageType damageType = damageType.None;
+        float damage = 0;
+        float manaCost = 0;
+        //The first components added have priority for primary fire and damage type
+        //After the primary fire is decided, the secondary fire
+        foreach (SpellComponent component in Components) 
+        {
+            if(component.spellType != spellType.None)
+            {
+                if (primaryType != spellType.None)
+                {
+                    primaryType = component.spellType;
+                }
+                else if (secondaryType != spellType.None) 
+                {
+                    secondaryType = component.spellType;  
+                }
+            }
+
+            if(component.damageType != damageType.None && damageType == damageType.None) 
+            {
+                damageType = component.damageType;
+            }
+
+            if (component.manaCost != 0 && manaCost == 0) 
+            {
+                manaCost = component.manaCost;
+            }
+
+            if (component.damage != 0 && damage == 0) 
+            {
+                damage = component.damage;
+            }
+        }
+
+        Spell spell = new Spell(primaryType, secondaryType, damageType, damage, manaCost);
+
+        return spell;
     }
 }
 
